@@ -58,7 +58,8 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  MyLib
+    exposed-modules:  MyLib,
+                      Spotihy
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -67,7 +68,11 @@ library
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.2.1
+    build-depends:    base ^>=4.17.2.1,
+                      text ^>=2.1.1,
+                      http-conduit ^>=2.3.8.3,
+                      aeson ^>=2.2.1.0,
+                      base64 ^>=1.0
 
     -- Directories containing source files.
     hs-source-dirs:   src
