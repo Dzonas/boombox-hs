@@ -12,6 +12,9 @@ import Network.HTTP.Simple
 authHost :: Text
 authHost = "accounts.spotify.com"
 
+apiHost :: Text
+apiHost = "api.spotify.com"
+
 data AuthConfig = AuthConfig {clientId :: Text, clientSecret :: Text} deriving (Show)
 
 data ClientCredentials = ClientCredentials {accessToken :: Text, tokenType :: Text, expiresIn :: Word} deriving (Show)
@@ -38,3 +41,28 @@ getClientCredentials config = do
   where
     base64EncodedToken = extractBase64 . encodeBase64 $ clientId config <> ":" <> clientSecret config
     authorizationHeader = encodeUtf8 ("Basic " <> base64EncodedToken)
+
+newtype Track = Track {trackId :: Text} deriving (Show)
+
+instance FromJSON Track where
+  parseJSON = withObject "track" $ \o -> do
+    trackItems <- o .: "tracks"
+    items <- trackItems .: "items"
+    case items of
+      [] -> fail "No track found"
+      (x : _) -> Track <$> (x .: "id")
+
+searchTrackName :: ClientCredentials -> Text -> IO Track
+searchTrackName (ClientCredentials accessToken _ _) trackName = do
+  let request =
+        setRequestQueryString [("q", Just $ encodeUtf8 trackName), ("type", Just "track")]
+          . addRequestHeader "Authorization" authorizationHeader
+          . setRequestPath "/v1/search"
+          . setRequestHost (encodeUtf8 apiHost)
+          . setRequestSecure True
+          . setRequestPort 443
+          $ defaultRequest
+  response <- httpJSON request
+  return $ getResponseBody response
+  where
+    authorizationHeader = encodeUtf8 $ "Bearer " <> accessToken
