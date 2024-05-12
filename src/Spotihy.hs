@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Spotihy where
@@ -7,6 +8,7 @@ import Data.Base64.Types (extractBase64)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Text.Encoding.Base64
+import GHC.Generics
 import Network.HTTP.Simple
 
 authHost :: Text
@@ -61,6 +63,30 @@ searchTrackName (ClientCredentials accessToken _ _) trackName = do
           . setRequestHost (encodeUtf8 apiHost)
           . setRequestSecure True
           . setRequestPort 443
+          $ defaultRequest
+  response <- httpJSON request
+  return $ getResponseBody response
+  where
+    authorizationHeader = encodeUtf8 $ "Bearer " <> accessToken
+
+data PlayTrackRequestBody = PlayTrackRequestBody {uris :: [Text]}
+  deriving
+    ( Show,
+      Generic
+    )
+
+instance ToJSON PlayTrackRequestBody
+
+playTrack :: ClientCredentials -> Track -> IO Value
+playTrack (ClientCredentials accessToken _ _) (Track trackId) = do
+  let request =
+        setRequestBodyJSON (PlayTrackRequestBody ["spotify:track:" <> trackId])
+          . addRequestHeader "Authorization" authorizationHeader
+          . setRequestPath "/v1/me/player/play"
+          . setRequestHost (encodeUtf8 apiHost)
+          . setRequestSecure True
+          . setRequestPort 443
+          . setRequestMethod "PUT"
           $ defaultRequest
   response <- httpJSON request
   return $ getResponseBody response
